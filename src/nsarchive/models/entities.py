@@ -11,10 +11,10 @@ def _load_position(id: str, path: str) -> dict:
 
     if position is None:
         return
-    
-    if position['category']:
+
+    if position['parent']:
         parent = _load_position(position['parent'], path)
-        
+
         p1 = position['permissions']
         p2 = parent['permissions']
 
@@ -23,55 +23,51 @@ def _load_position(id: str, path: str) -> dict:
     return position
 
 
-class Permission:
-    def __init__(self, initial: str = "----"):
-        self.append: bool = False
-        self.manage: bool = False
-        self.edit: bool = False
-        self.read: bool = False
-
-        self.load(initial)
-
-    def load(self, val: str) -> None:
-        if 'a' in val: self.append = True
-        if 'm' in val: self.manage = True
-        if 'e' in val: self.edit = True
-        if 'r' in val: self.read = True
-
 class PositionPermissions:
     """
     Permissions d'une position à l'échelle du serveur. Certaines sont attribuées selon l'appartenance à divers groupes ayant une position précise
     """
 
     def __init__(self) -> None:
-        self.aliases = Permission() # APPEND = faire une requête au nom d'une autre entité, MANAGE = /, EDIT = /, READ = /
-        self.bots = Permission() # APPEND = /, MANAGE = proposer d'héberger un bot, EDIT = changer les paramètres d'un bot, READ = /
-        self.candidacies = Permission() # APPEND = se présenter à une élection, MANAGE = gérer les candidatures d'une élection, EDIT = modifier une candidature, READ = /
-        self.constitution = Permission() # APPEND = /, MANAGE = /, EDIT = modifier la constitution, READ = /
-        self.database = Permission() # APPEND = créer des sous-bases de données, MANAGE = gérer la base de données, EDIT = modifier les éléments, READ = avoir accès à toutes les données sans exception
-        self.inventories = Permission("a---") # APPEND = ouvrir un ou plusieurs comptes/inventaires, MANAGE = voir les infos globales concernant les comptes en banque ou inventaires, EDIT = gérer des comptes en banque (ou inventaires), READ = voir les infos d'un compte en banque ou inventaire
-        self.items = Permission("---r") # APPEND = créer un item, MANAGE = gérer les items, EDIT = modifier des items, READ = voir tous les items
-        self.laws = Permission() # APPEND = proposer un texte de loi, MANAGE = accepter ou refuser une proposition, EDIT = modifier un texte, READ = /
-        self.loans = Permission() # APPEND = prélever de l'argent sur un compte, MANAGE = gérer les prêts/prélèvements, EDIT = modifier les prêts, READ = voir tous les prêts
-        self.members = Permission("---r") # APPEND = créer des entités, MANAGE = modérer des entités (hors Discord), EDIT = modifier des entités, READ = voir le profil des entités
-        self.mines = Permission("----") # APPEND = générer des matières premières, MANAGE = gérer les accès aux réservoirs, EDIT = créer un nouveau réservoir, READ = récupérer des matières premières
-        self.money = Permission("----") # APPEND = générer ou supprimer de la monnaie, MANAGE = /, EDIT = /, READ = /
-        self.national_channel = Permission() # APPEND = prendre la parole sur la chaîne nationale, MANAGE = voir qui peut prendre la parole, EDIT = modifier le planning de la chaîne nationale, READ = /
-        self.organizations = Permission("---r") # APPEND = créer une nouvelle organisation, MANAGE = exécuter des actions administratives sur les organisations, EDIT = modifier des organisations, READ = voir le profil de n'importe quelle organisation
-        self.reports = Permission() # APPEND = déposer plainte, MANAGE = accépter ou refuser une plainte, EDIT = /, READ = accéder à des infos supplémentaires pour une plainte
-        self.sales = Permission("---r") # APPEND = vendre, MANAGE = gérer les ventes, EDIT = modifier des ventes, READ = accéder au marketplace
-        self.sanctions = Permission() # APPEND = sanctionner un membre, MANAGE = gérer les sanctions d'un membre, EDIT = modifier une sanction, READ = accéder au casier d'un membre
-        self.state_budgets = Permission() # APPEND = débloquer un nouveau budget, MANAGE = gérer les budjets, EDIT = gérer les sommes pour chaque budjet, READ = accéder aux infos concernant les budgets
-        self.votes = Permission() # APPEND = déclencher un vote, MANAGE = fermer un vote, EDIT = /, READ = lire les propriétés d'un vote avant sa fermeture
+        self.admin: bool = False
+        self.citizen: bool = False
 
-    def merge(self, permissions: dict[str, str] | typing.Self):
+        self.create_entities: bool = False # Créer des entités
+        self.create_groups: bool = False # Créer des groupes
+        self.create_parties: bool = False # Créer un parti
+        self.debit_accounts: bool = False # Débiter les comptes bancaires
+        self.edit_constitution: bool = False # Proposer des lois constitutionnelles
+        self.edit_laws: bool = False # Proposer des lois
+        self.handle_reports: bool = False # Accepter ou refuser les signalements
+        self.investigate: bool = False # Accéder aux logs
+        self.manage_accounts: bool = False # Gérer les comptes bancaires
+        self.manage_bots: bool = False # Gérer la config des bots
+        self.manage_certifications: bool = False # Gérer et distribuer les certifications
+        self.manage_elections: bool = False # Planifier ou annuler des élections, gérer des candidatures...
+        self.manage_entities: bool = False # Gérer les entités
+        self.manage_government: bool = False # Créer des minisètres, destituer des ministres, etc.
+        self.manage_groups: bool = False # Gérer les groupes
+        self.manage_lawsuits: bool = False # Gérer ou ouvrir des poursuites judiciaires
+        self.manage_officers: bool = False # Gérer les officiers et agents
+        self.manage_parties: bool = False # Gérer les partis
+        self.manage_positions: bool = False # Gérer les positions
+        self.manage_votes: bool = False # Gérer les élections
+        self.moderate_entities: bool = False # Modérer les entités
+        self.moderate_groups: bool = False # Modérer les groupes
+        self.use_aliases: bool = False # Faire une requête au nom d'une autre entité
+        self.vote: bool = False # Voter
+        self.vote_laws: bool = False # Voter les lois
+
+    def __repr__(self):
+        return self.__dict__.__repr__()
+
+    def merge(self, permissions: dict[str, bool] | typing.Self):
         if isinstance(permissions, PositionPermissions):
-            permissions = permissions.__dict__
+            permissions: dict[str, bool] = permissions.__dict__
 
         for key, val in permissions.items():
-            perm: Permission = self.__getattribute__(key)
-            perm.load(val)
-
+            perm: bool = self.__getattribute__(key)
+            self.__setattr__(key, bool(perm or val))
 
 class Position:
     """
@@ -82,12 +78,10 @@ class Position:
         Identifiant de la position
     - name: `str`\n
         Titre de la position
-    - is_global_scope: `str`\n
-        Permet de savoir si la position a des permissions en dehors de sa zone
+    - parent: `str`\n
+        Parent de la position, dont elle héritera des permissions
     - permissions: `.PositionPermissions`\n
         Permissions accordées à l'utilisateur
-    - manager_permissions: `.PositionPermissions`\n
-        Permissions nécessaires pour gérer la position
     """
 
     def __init__(self, id: str = 'member') -> None:
@@ -95,10 +89,8 @@ class Position:
 
         self.id = id
         self.name: str = "Membre"
-        self.is_global_scope: bool = True
-        self.category: str = None
+        self.parent: str = None
         self.permissions: PositionPermissions = PositionPermissions()
-        self.manager_permissions: PositionPermissions = PositionPermissions()
 
 
     def __repr__(self):
@@ -112,23 +104,20 @@ class Position:
 
         self.id = _data['id']
         self.name = _data['name']
-        self.is_global_scope = _data['is_global_scope']
-        self.category = _data['category']
+        self.parent = _data['parent']
         self.permissions.merge(_data['permissions'])
-        self.manager_permissions.merge(_data['manager_permissions'])
 
     def _to_dict(self) -> dict:
         return {
             'id': self.id,
             'name': self.name,
-            'is_global_scope': self.is_global_scope,
-            'category': self.category,
-            'permissions': {}, # TODO: issue #2
-            'manager_permissions': {} # TODO: issue #2
+            'parent': self.parent,
+            'permissions': self.permissions.__dict__
         }
 
     def save(self):
         db.put_item(self._path, 'positions', self._to_dict(), True)
+
 
 class Entity:
     """
@@ -162,7 +151,9 @@ class Entity:
         self.id = NSID(_data['id'])
         self.name = _data['name']
         self.register_date = _data['register_date']
-        self.position._load(_data['position'], path)
+
+        position = _load_position(_data['position'], path)
+        if position: self.position._load(position, path)
 
         for  key, value in _data.get('additional', {}).items():
             if isinstance(value, str) and value.startswith('\n'):
@@ -218,8 +209,7 @@ class User(Entity):
         self.register_date = _data['register_date']
 
         position = _load_position(_data['position'], path)
-        if position is None: position = Position()._to_dict()
-        self.position._load(position, path)
+        if position: self.position._load(position, path)
 
         for  key, value in _data.get('additional', {}).items():
             if isinstance(value, str) and value.startswith('\n'):
@@ -327,7 +317,7 @@ class GroupMember:
             return NotImplemented
 
         return self.id == value.id
-    
+
     def __lt__(self, value):
         if not isinstance(value, GroupMember):
             return NotImplemented
@@ -345,7 +335,7 @@ class GroupMember:
             return value.manager
 
         return self.level < value.level
-    
+
     def __gt__(self, value):
         if not isinstance(value, GroupMember):
             return NotImplemented
@@ -449,8 +439,7 @@ class Organization(Entity):
         self.register_date = _data['register_date']
 
         position = _load_position(_data['position'], path)
-        if position is None: position = Position('group')._to_dict()
-        self.position._load(position, path)
+        if position: self.position._load(position, path)
 
         for  key, value in _data.get('additional', {}).items():
             if isinstance(value, str) and value.startswith('\n'):
@@ -516,7 +505,7 @@ class Organization(Entity):
     def add_member(self, member: NSID) -> GroupMember:
         if not isinstance(member, NSID):
             raise TypeError("L'entrée membre doit être de type NSID")
-        
+
         member = GroupMember(member)
         member._group_id = self.id
         member._path = self._path

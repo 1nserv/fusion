@@ -2,8 +2,8 @@ import os
 import time
 import typing
 
-from ..models.base import *
-from ..models.entities import *
+from ..models.base import NSID, Interface
+from ..models.entities import _load_position, Entity, User, Organization, Position, PositionPermissions
 
 from .. import database as db
 
@@ -95,7 +95,7 @@ class EntityInterface(Interface):
             data = {
                 'id': id,
                 'name': name,
-                'position': position or 'group',
+                'position': position if position else 'group',
                 'register_date': round(time.time()),
                 'owner_id': NSID(0x100), # self.session.author, | TODO: Implémenter les Sessions
                 'certifications': {}, # Implémenter les Certifications
@@ -106,7 +106,7 @@ class EntityInterface(Interface):
             data = {
                 'id': id,
                 'name': name,
-                'position': position or 'member',
+                'position': position if position else 'member',
                 'register_date': round(time.time()),
                 # 'certifications': {},
                 'xp': 0,
@@ -197,7 +197,7 @@ class EntityInterface(Interface):
         - `.Position`
         """
 
-        data = db.get_item(self.path, 'positions', id)
+        data = _load_position(id, self.path)
 
         if not data:
             return
@@ -205,10 +205,11 @@ class EntityInterface(Interface):
         # TRAITEMENT
 
         position = Position(id)
-        position._load(data, self.path)
+        pos = _load_position(id, self.path)
+        position._load(pos, self.path)
 
         return position
-    
+
     def get_position_tree(self, id: str, tree: tuple = ()) -> tuple:
         position = self.get_position(id)
 
@@ -224,7 +225,7 @@ class EntityInterface(Interface):
 
         if position.parent:
             self.permission_herit(position.parent, permissions)
-    
+
     def create_position(self, id: str, title: str, permissions: PositionPermissions = PositionPermissions(), parent: Position = None) -> Position:
         """
         Crée une position légale
@@ -249,10 +250,11 @@ class EntityInterface(Interface):
 
 
         position = Position(id)
-        position._load(data, self.path)
+        pos = _load_position(id, self.path)
+        position._load(pos, self.path)
 
         return position
-    
+
     def delete_position(self, id: str):
         db.delete_item(self.path, 'positions', id)
 

@@ -81,29 +81,33 @@ def setup(path: str, include_logs: bool = False, include_drive: bool = False):
 		attrs = (
 			Attribute('id', str),
 			Attribute('name', str),
-			Attribute('category', str, nullable = True),
-			Attribute('is_global_scope', bool),
-			Attribute('permissions', dict),
-			Attribute('manager_permissions', dict)
+			Attribute('parent', str, nullable = True),
+			Attribute('permissions', dict)
 		)
 	)
 
 	db.put_item(os.path.join(path, 'entities'), table = 'positions', item = {
 		'id': 'member',
 		'name': 'Membre',
-		'category': None,
-		'is_global_scope': True,
-		'permissions': {},
-		'manager_permissions': {}
+		'parent': None,
+		'permissions': {}
+	})
+
+	db.put_item(os.path.join(path, 'entities'), table = 'positions', item = {
+		'id': 'citoyen',
+		'name': 'Citoyen',
+		'parent': 'member',
+		'permissions': {
+			'citizen': True,
+			'create_groups': True
+		}
 	})
 
 	db.put_item(os.path.join(path, 'entities'), table = 'positions', item = {
 		'id': 'group',
 		'name': 'Groupe',
-		'category': None,
-		'is_global_scope': True,
-		'permissions': {},
-		'manager_permissions': {}
+		'parent': None,
+		'permissions': {}
 	})
 
 

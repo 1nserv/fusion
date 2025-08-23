@@ -76,12 +76,12 @@ class JusticeInterface(Interface):
 
     def open_lawsuit(self, target: NSID, judge: NSID, title: str = None, report: Report = None, private: bool = True) -> Lawsuit:
         data = {
-            'id': report.id or NSID(round(time.time() * 1000)),
+            'id': report.id if report else NSID(round(time.time() * 1000)),
             'target': NSID(target),
             'judge': NSID(judge),
             'title': title,
             'date': round(time.time()),
-            'report': report.id or None,
+            'report': report.id if report else None,
             'is_private': private,
             'is_open': False
         }
@@ -128,7 +128,7 @@ class JusticeInterface(Interface):
             'date': round(time.time()),
             'duration': duration,
             'title': title,
-            'lawsuit': lawsuit.id or None
+            'lawsuit': lawsuit.id if lawsuit else None
         }
 
         db.put_item(self.path, 'sanctions', data)

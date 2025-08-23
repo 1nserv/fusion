@@ -9,17 +9,7 @@ def merge_permissions(d1: dict[str, str], d2: dict[str, str]) -> dict[str, str]:
 	new_dict: dict[str, str] = d1.copy()
 
 	for key, val in d2.items():
-		ref = ""
-		for state, i in zip(val, range(len(val))):
-			if key not in new_dict.keys():
-				new_dict[key] = '----'
-
-			if new_dict[key][i] == "-": # d2 dominant
-				ref += state
-			else: # d1 dominant
-				ref += new_dict[key][i]
-
-		new_dict[key] = ref
+		new_dict[key] = bool(val or new_dict.get(key, False))
 
 	return new_dict
 
