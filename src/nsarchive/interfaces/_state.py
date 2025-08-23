@@ -77,8 +77,8 @@ class StateInterface(Interface):
 
             opts[_opt_id] = {
                 'title': _opt_title,
-                'count': 0
-                # 'voters': [] | TODO: issue #4
+                'count': 0,
+                'voters': []
             }
 
         _TYPES = (
@@ -114,8 +114,8 @@ class StateInterface(Interface):
             'majority': int(majority),
             'start': int(start),
             'end': int(end),
-            'options': opts
-            # 'voters': []
+            'options': opts,
+            'voters': []
         }
 
         db.put_item(self.path, 'votes', data)

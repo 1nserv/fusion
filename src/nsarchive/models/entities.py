@@ -189,9 +189,7 @@ class User(Entity):
     - xp: `int`\n
         Points d'expérience de l'entité
     - boosts: `dict[str, int]`\n
-        Ensemble des boosts dont bénéficie l'entité 
-    - votes: `list[NSID]`\n
-        Liste des votes auxquels a participé l'entité
+        Ensemble des boosts dont bénéficie l'entité
     """
 
     def __init__(self, id: NSID) -> None:
@@ -199,7 +197,6 @@ class User(Entity):
 
         self.xp: int = 0
         self.boosts: dict[str, int] = {}
-        self.votes: list[NSID] = []
 
     def _load(self, _data: dict, path: str):
         self._path = path
@@ -220,8 +217,6 @@ class User(Entity):
         self.xp = _data['xp']
         self.boosts = _data['boosts']
 
-        self.votes = [ NSID(vote) for vote in _data['votes'] ] # TODO: issue #4
-
     def _to_dict(self) -> dict:
         return {
             'id': self.id,
@@ -231,8 +226,7 @@ class User(Entity):
             # 'certifications': {}, | TODO: issue #3
             'xp': self.xp,
             'boosts': self.boosts,
-            'additional': self.additional,
-            'votes': [ str(vote) for vote in self.votes ]
+            'additional': self.additional
         }
 
     def save(self):

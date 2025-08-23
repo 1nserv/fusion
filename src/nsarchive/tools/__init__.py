@@ -192,7 +192,8 @@ def setup(path: str, include_logs: bool = False, include_drive: bool = False):
 			Attribute('majority', int),
 			Attribute('start_date', int),
 			Attribute('end_date', int),
-			Attribute('options', dict)
+			Attribute('options', dict),
+			Attribute('voters', list)
 		)
 	)
 

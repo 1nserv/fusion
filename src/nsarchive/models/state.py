@@ -21,7 +21,7 @@ class VoteOption:
     def __init__(self, title: str):
         self.title: str = title
         self.count: int = 0
-        # self.voters: list = [] | TODO: issue #4
+        self.voters: list = []
 
     def __repr__(self) -> dict:
         return json.dumps(self.__dict__)
@@ -29,7 +29,7 @@ class VoteOption:
     def _load(self, _data: dict):
         self.title = str(_data['title'])
         self.count = int(_data['count'])
-        # self.voters = list(map(NSID, _data['voters'])) | TODO: issue #4
+        self.voters = list(map(NSID, _data['voters']))
 
 class Vote:
     """
@@ -84,7 +84,7 @@ class Vote:
 
         self.start_date: int = round(time.time())
         self.end_date: int = 0
-        # self.voters: list[NSID] = [] | TODO: issue #4
+        self.voters: list[NSID] = []
 
         self.options: dict[str, VoteOption] = {}
 
@@ -104,7 +104,7 @@ class Vote:
 
         self.start_date = _data['start']
         self.end_date = _data['end']
-        # self.voters = list(map(NSID, _data['voters'])) | TODO: issue #4
+        self.voters = list(map(NSID, _data['voters']))
 
         self.options = {}
 
@@ -115,13 +115,9 @@ class Vote:
             self.options[_opt_id] = option
 
     def _to_dict(self) -> dict:
-        """
-        TODO: issue #4
-
         if self.anonymous:
             for opt in self.options.values():
                 opt.voters.clear()
-        """
 
         return {
             'id': self.id,
@@ -134,7 +130,7 @@ class Vote:
             'majority': self.majority,
             'start': self.start_date,
             'end': self.end_date,
-            # 'voters': list(map(str, self.voters)) | TODO: issue #4
+            'voters': list(map(str, self.voters)),
             'options': { id: opt.__dict__ for id, opt in self.options.items() }
         }
 
@@ -148,14 +144,14 @@ class Vote:
         else:
             raise KeyError(f"Option {id} not found in vote {self.id}")
 
-    def add_vote(self, id: str, _save: bool = True): # author: NSID):
+    def add_vote(self, id: str, author: NSID, _save: bool = True):
         """
         Ajoute un vote à l'option spécifiée
         """
 
         self.get(id).count += 1
-        # self.get(id).voters.append(author) | # TODO: issue #4
-        # self.voters.append(author) | TODO: issue #4
+        self.get(id).voters.append(author)
+        self.voters.append(author)
 
         if _save:
             self.save()
