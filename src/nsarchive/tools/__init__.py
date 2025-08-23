@@ -56,7 +56,6 @@ def setup(path: str, include_logs: bool = False, include_drive: bool = False):
 			Attribute('additional', dict),
 			Attribute('xp', int),
 			Attribute('boosts', dict),
-			Attribute('votes', list) # TODO: issue #4
 		)
 	)
 
