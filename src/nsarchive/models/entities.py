@@ -32,6 +32,7 @@ class PositionPermissions:
         self.admin: bool = False
         self.citizen: bool = False
 
+        self.create_certifications: bool = False # Créer des certifications
         self.create_entities: bool = False # Créer des entités
         self.create_groups: bool = False # Créer des groupes
         self.create_parties: bool = False # Créer un parti
@@ -119,6 +120,42 @@ class Position:
         db.put_item(self._path, 'positions', self._to_dict(), True)
 
 
+class Certification:
+    """
+    Classe de référence pour les certifications
+    """
+
+    def __init__(self, id: NSID) -> None:
+        self._path: str = '' # Chemin de la db
+
+        self.id: NSID = NSID(id) # ID hexadécimal de la certification
+        self.name: str = "Certification Inconnue"
+        self.owner: NSID = NSID() # Entreprise propriétaire de la certification
+        self.parent: NSID = NSID() # Certification mère (nécessaire à l'entité qui voudra délivrer celle-ci)
+        self.duration: int = 0
+
+    def _load(self, _data: dict, path: str):
+        self._path = path
+
+        self.id = NSID(_data['id'])
+        self.name = _data['name']
+        self.owner = NSID(_data['owner'])
+        self.parent = NSID(_data['parent'])
+        self.duration = _data['duration']
+
+    def _to_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'name': self.name,
+            'owner': self.owner,
+            'parent': self.parent,
+            'duration': self.duration
+        }
+
+    def save(self):
+        db.put_item(self._path, 'certifications', self._to_dict(), True)
+
+
 class Entity:
     """
     Classe de référence pour les entités
@@ -132,6 +169,8 @@ class Entity:
         Date d'enregistrement
     - position: `.Position`\n
         Position civile
+    - certifications: `dict`\n
+        Titres délivrables par les groupes
     - additional: `dict`\n
         Infos supplémentaires exploitables par différents services
     """
@@ -143,6 +182,7 @@ class Entity:
         self.name: str = "Entité Inconnue"
         self.register_date: int = 0
         self.position: Position = Position()
+        self.certifications: dict[NSID, int] = {}
         self.additional: dict = {}
 
     def _load(self, _data: dict, path: str):
@@ -151,6 +191,7 @@ class Entity:
         self.id = NSID(_data['id'])
         self.name = _data['name']
         self.register_date = _data['register_date']
+        self.certifications = { NSID(id): exp for id, exp in _data['certifications'].items() }
 
         position = _load_position(_data['position'], path)
         if position: self.position._load(position, path)
@@ -170,6 +211,25 @@ class Entity:
 
     def set_position(self, position: Position) -> None:
         self.position = position
+        self.save()
+
+    def add_certification(self, certification: Certification, __expires: int = 2419200) -> None:
+        self.certifications[certification.id] = int(round(time.time()) + __expires)
+        self.save()
+
+    def has_certification(self, certification: Certification) -> bool:
+        _start = self.certifications.get(certification.id)
+
+        if _start:
+            if _start + certification.duration < int(round(time.time())):
+                return True
+            else:
+                self.remove_certification(certification.id)
+
+        return False
+
+    def remove_certification(self, certification: NSID) -> None:
+        del self.certifications[certification]
         self.save()
 
     def add_link(self, key: str, value: str | int) -> None:
@@ -204,6 +264,7 @@ class User(Entity):
         self.id = NSID(_data['id'])
         self.name = _data['name']
         self.register_date = _data['register_date']
+        self.certifications = { NSID(id): exp for id, exp in _data['certifications'].items() }
 
         position = _load_position(_data['position'], path)
         if position: self.position._load(position, path)
@@ -223,7 +284,7 @@ class User(Entity):
             'name': self.name,
             'position': self.position.id,
             'register_date': self.register_date,
-            # 'certifications': {}, | TODO: issue #3
+            'certifications': self.certifications,
             'xp': self.xp,
             'boosts': self.boosts,
             'additional': self.additional
@@ -422,7 +483,7 @@ class Organization(Entity):
         self.owner: Entity = User(NSID(0x0))
         self.avatar_path: str = ''
 
-        self.certifications: dict = {}
+        self.certifications: dict[NSID, int] = {}
         self.members: dict[NSID, GroupMember] = {}
 
     def _load(self, _data: dict, path: str):
@@ -431,6 +492,7 @@ class Organization(Entity):
         self.id = NSID(_data['id'])
         self.name = _data['name']
         self.register_date = _data['register_date']
+        self.certifications = { NSID(id): exp for id, exp in _data['certifications'].items() }
 
         position = _load_position(_data['position'], path)
         if position: self.position._load(position, path)
@@ -467,8 +529,6 @@ class Organization(Entity):
 
             self.members[NSID(member.id)] = member
 
-        self.certifications = _data['certifications']
-
     def _to_dict(self) -> dict:
         return {
             'id': self.id,
@@ -483,18 +543,6 @@ class Organization(Entity):
 
     def save(self):
         db.put_item(self._path, 'organizations', self._to_dict(), True)
-
-
-    def add_certification(self, certification: str, __expires: int = 2419200) -> None:
-        self.certifications[certification] = int(round(time.time()) + __expires)
-        self.save()
-
-    def has_certification(self, certification: str) -> bool:
-        return certification in self.certifications.keys()
-
-    def remove_certification(self, certification: str) -> None:
-        del self.certifications[certification]
-        self.save()
 
     def add_member(self, member: NSID) -> GroupMember:
         if not isinstance(member, NSID):

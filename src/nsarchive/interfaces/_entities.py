@@ -3,7 +3,7 @@ import time
 import typing
 
 from ..models.base import NSID, Interface
-from ..models.entities import _load_position, Entity, User, Organization, Position, PositionPermissions
+from ..models.entities import _load_position, Entity, User, Organization, Position, PositionPermissions, Certification
 
 from .. import database as db
 
@@ -282,6 +282,90 @@ class EntityInterface(Interface):
         return res
 
 
+    def get_certification(self, id: str) -> Certification:
+        """
+        Récupère une certification.
+
+        ## Paramètres
+        id: `str`\n
+            ID de la certification (SENSIBLE À LA CASSE !)
+
+        ## Renvoie
+        - `.Certification`
+        """
+
+        data = db.get_item(self.path, 'certifications', id)
+
+        if not data:
+            return
+
+        # TRAITEMENT
+
+        certification = Certification(id)
+        certification._load(data, self.path)
+
+        return certification
+
+    def register_certification(self, id: str, title: str, owner: Organization, parent: Certification = None, duration: int = 2419200) -> Certification:
+        """
+        Crée une certification
+
+        ## Paramètres
+        - id: `str`\n
+            ID de la certification
+        - title: `str`\n
+            Titre de la certification
+        - owner: `Organization`\n
+            Organisation propriétaire de la certification
+        - parent: `Certification`\n
+            Certification mère (nécessaire à l'entité qui voudra délivrer celle-ci)
+        - duration: `int`\n
+            Durée de la certification en secondes (par défaut 28 jours)
+        """
+
+        data = {
+            'id': id,
+            'name': title,
+            'duration': duration,
+            'parent': parent.id if parent else None,
+            'owner': owner.id
+        }
+
+        db.put_item(self.path, 'certifications', data)
+
+
+        certification = Certification(id)
+        certification._load(data, self.path)
+
+        return certification
+
+    def delete_certification(self, id: str):
+        db.delete_item(self.path, 'certifications', id)
+
+    def fetch_certifications(self, **query: typing.Any) -> list[Certification]:
+        """
+        Récupère une liste de certifications en fonction d'une requête.
+
+        ## Paramètres
+        query: `**dict`\n
+            La requête pour filtrer les certifications.
+
+        ## Renvoie
+        - `list[.Certification]`
+        """
+
+        _res = db.fetch('certifications', **query)
+        res = []
+
+        for _data in _res:
+            cert = Certification()
+            cert._load(_data, self.path)
+
+            res.append(cert)
+
+        return res
+
+
     # SHORTCUTS
 
     def get_user(self, id: NSID) -> User | None:
@@ -289,7 +373,7 @@ class EntityInterface(Interface):
 
     def get_group(self, id: NSID) -> Organization | None:
         return self.get_entity(id, Organization)
-    
+
     def create_user(self, id: NSID, name: str, position: str = None) -> User:
         return self.create_entity(id, name, User, position)
 

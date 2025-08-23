@@ -53,6 +53,7 @@ def setup(path: str, include_logs: bool = False, include_drive: bool = False):
 			Attribute('name', str),
 			Attribute('register_date', int),
 			Attribute('position', str),
+			Attribute('certifications', dict),
 			Attribute('additional', dict),
 			Attribute('xp', int),
 			Attribute('boosts', dict),
@@ -67,10 +68,10 @@ def setup(path: str, include_logs: bool = False, include_drive: bool = False):
 			Attribute('name', str),
 			Attribute('register_date', int),
 			Attribute('position', str),
+			Attribute('certifications', dict),
 			Attribute('additional', dict),
 			Attribute('owner_id', NSID),
-			Attribute('members', dict),
-			Attribute('certifications', dict)
+			Attribute('members', dict)
 		)
 	)
 
@@ -82,6 +83,18 @@ def setup(path: str, include_logs: bool = False, include_drive: bool = False):
 			Attribute('name', str),
 			Attribute('parent', str, nullable = True),
 			Attribute('permissions', dict)
+		)
+	)
+
+	gendb(
+		path = os.path.join(path, 'entities'),
+		table = 'certifications',
+		attrs = (
+			Attribute('id', str),
+			Attribute('name', str),
+			Attribute('owner', NSID),
+			Attribute('parent', NSID),
+			Attribute('duration', int)
 		)
 	)
 
