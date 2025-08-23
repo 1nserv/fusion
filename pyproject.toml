@@ -1,15 +1,21 @@
-[tool.poetry]
+[project]
 name = "nsa-fusion"
-version = "1.0.0"
+version = "1.0.0a4"
 description = "API-wrapper pour récupérer des données liées à Nation"
-authors = ["happex <110610727+okayhappex@users.noreply.github.com>"]
+authors = [
+	{"name" = "happex", "email" = "110610727+okayhappex@users.noreply.github.com"}
+]
 license = "GPL-3.0"
 readme = "README.md"
+requires-python = ">=3.10"
 
-[tool.poetry.dependencies]
-python = "^3.10"
-pillow = "^10.4"
+dependencies = [
+	"pillow>=10.4"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

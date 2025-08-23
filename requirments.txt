@@ -5,3 +5,7 @@ requests
 # Pour les tests
 bcrypt
 python-dotenv
+
+# PyPI
+build
+twine
