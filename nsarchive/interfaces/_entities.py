@@ -25,14 +25,14 @@ class EntityInterface(Interface):
     ---- ENTITÉS ----
     """
 
-    def get_entity(self, id: NSID, _class: str = None) -> User | Organization | None:
+    def get_entity(self, id: NSID, _class: typing.Type) -> User | Organization | None:
         """
         Fonction permettant de récupérer le profil public d'une entité.\n
 
         ## Paramètres
         - id: `NSID`\n
             ID héxadécimal de l'entité à récupérer
-        - _class: `str`\n
+        - _class: `Type`\n
             Classe du modèle à prendre (`.User` ou `.Organization`)
 
         ## Renvoie
@@ -43,22 +43,22 @@ class EntityInterface(Interface):
 
         id = NSID(id)
 
-        if _class == 'individual':
+        if _class == User:
             data = db.get_item(self.path, 'individuals', id)
-        elif _class == 'organization':
+        elif _class == Organization:
             data = db.get_item(self.path, 'organizations', id)
         elif _class is None:
             data = db.get_item(self.path, 'individuals', id)
-            _class = 'individuals'
+            _class = User
 
             if not data:
                 data = db.get_item(self.path, 'organizations', id)
-                _class = 'organizations'
+                _class = Organization
 
             if not data:
                 _class = None
         else:
-            raise ValueError(f"Invalid class type: {_class}")
+            raise ValueError(f"Invalid class type: {_class.__name__}")
 
         if not data:
             return
@@ -66,65 +66,63 @@ class EntityInterface(Interface):
 
         # TRAITEMENT
 
-        if _class == 'individual':
+        if _class == User:
             entity = User(id)
-        elif _class == 'organization':
+        elif _class == Organization:
             entity = Organization(id)
         else:
             return
 
-        entity._load(data)
+
+        entity._load(data, self.path)
 
         return entity
 
-    def create_entity(self, id: NSID, name: str, _class: str, position: str = None):
+    def create_entity(self, id: NSID, name: str, _class: typing.Type, position: str = None):
         """
         Fonction permettant de créer ou modifier une entité.
 
         ## Paramètres
         - id (`NSID`): Identifiant NSID
         - name (`str`): Nom d'usage
-        - _class (`'user'` ou `'group'`): Type de l'entité
+        - _class (`.User` ou `.Organization`): Type de l'entité
         - position (`str`, optionnel): ID de la position civile
         """
 
         id = NSID(id)
 
-        if _class in ('group', 'organization'):
-            _class = 'organizations'
-
+        if _class == Organization:
             data = {
                 'id': id,
                 'name': name,
                 'position': position or 'group',
                 'register_date': round(time.time()),
-                'owner_id': self.session.author, # TODO: Implémenter les Sessions
+                'owner_id': NSID(0x100), # self.session.author, | TODO: Implémenter les Sessions
                 'certifications': {}, # Implémenter les Certifications
                 'members': {},
                 'additional': {}
             }
-        elif _class in ('user', 'individual'):
-            _class = 'individuals'
-
+        elif _class == User:
             data = {
                 'id': id,
                 'name': name,
                 'position': position or 'member',
                 'register_date': round(time.time()),
-                'certifications': {},
+                # 'certifications': {},
                 'xp': 0,
                 'boosts': {},
-                'additional': {}
+                'additional': {},
+                'votes': []
             }
         else:
-            raise ValueError(f"Class '{_class}' not recognized.")
+            raise ValueError(f"Class '{_class.__name__}' not recognized.")
 
-        db.put_item(self.path, _class, data, True)
+        db.put_item(self.path, 'individuals' if _class == User else 'organizations', data, True)
 
 
         # TRAITEMENT
 
-        entity = User(id) if _class == 'individuals' else Organization(id)
+        entity = User(id) if _class == User else Organization(id)
         entity._load(data, self.path)
 
         return entity
@@ -139,33 +137,32 @@ class EntityInterface(Interface):
         """
 
         try:
-            db.delete_item(self.path, 'individuals', id)
+            db.delete_item(self.path, 'individuals', NSID(id))
         except KeyError:
-            db.delete_item(self.path, 'organizations', id)
+            db.delete_item(self.path, 'organizations', NSID(id))
 
-    def fetch_entities(self, _class: str, **query: typing.Any) -> list[User] | list[Organization]:
+    def fetch_entities(self, _class: typing.Type, **query: typing.Any) -> list[User] | list[Organization]:
         """
         Récupère une liste d'entités en fonction d'une requête.
 
         ## Paramètres
-        - _class: `'users' | 'groups'`\n
+        - _class (`.User` ou `.Organization`):\n
             Table dans laquelle chercher les utilisateurs
         - query: `**dict`\n
             La requête pour filtrer les entités.
 
         ## Renvoie
-        - `list[.User] | list[.Organization]`
+        - `list[.User | .Organization]`
         """
 
-        if _class not in ('individuals', 'organizations'):
-            if _class == 'users':
-                _class = 'individuals'
-            elif _class == 'groups':
-                _class = 'organizations'
-            else:
-                raise ValueError(f"Class '{_class}' is not recognized.")
+        if _class == User:
+            table = 'individuals'
+        elif _class == Organization:
+            table = 'organizations'
+        else:
+            raise ValueError(f"Class '{_class.__name__}' is not recognized.")
 
-        _res = db.fetch(f"{self.path}:{_class}", **query)
+        _res = db.fetch(f"{self.path}:{table}", **query)
 
 
         res = []
@@ -173,9 +170,9 @@ class EntityInterface(Interface):
         for _entity in _res:
             if _entity is None: continue
 
-            if _entity['_class'] == 'individuals':
+            if _class == User:
                 entity = User(_entity["id"])
-            elif _entity['_class'] == 'organizations':
+            elif _class == Organization:
                 entity = Organization(_entity["id"])
             else:
                 entity = Entity(_entity["id"])
@@ -281,3 +278,46 @@ class EntityInterface(Interface):
             res.append(pos)
 
         return res
+
+
+    # SHORTCUTS
+
+    def get_user(self, id: NSID) -> User | None:
+        return self.get_entity(id, User)
+
+    def get_group(self, id: NSID) -> Organization | None:
+        return self.get_entity(id, Organization)
+    
+    def create_user(self, id: NSID, name: str, position: str = None) -> User:
+        return self.create_entity(id, name, User, position)
+
+    def create_group(self, id: NSID, name: str, position: str = None) -> Organization:
+        return self.create_entity(id, name, Organization, position)
+
+    def fetch_users(self, **query: typing.Any) -> list[User]:
+        """
+        Récupère une liste d'utilisateurs en fonction d'une requête.
+
+        ## Paramètres
+        query: `**dict`\n
+            La requête pour filtrer les utilisateurs.
+
+        ## Renvoie
+        - `list[.User]`
+        """
+
+        return self.fetch_entities(User, **query)
+
+    def fetch_groups(self, **query: typing.Any) -> list[Organization]:
+        """
+        Récupère une liste d'organisations en fonction d'une requête.
+
+        ## Paramètres
+        query: `**dict`\n
+            La requête pour filtrer les organisations.
+
+        ## Renvoie
+        - `list[.Organization]`
+        """
+
+        return self.fetch_entities(Organization, **query)

@@ -1,7 +1,7 @@
 import time
 
 from .base import NSID
-from .. import errors, database as db
+from .. import database as db
 
 
 class BankAccount:
@@ -56,8 +56,8 @@ class BankAccount:
 
     def _to_dict(self) -> dict:
         return {
-            'id': str(self.id),
-            'owner_id': str(self.owner_id),
+            'id': self.id,
+            'owner_id': self.owner_id,
             'register_date': self.register_date,
             'tag': self.tag,
             'amount': self.amount,

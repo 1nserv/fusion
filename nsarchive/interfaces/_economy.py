@@ -12,7 +12,7 @@ class EconomyInterface(Interface):
 	"""Interface qui vous permettra d'interagir avec les comptes en banque et les transactions économiques."""
 
 	def __init__(self, path: str) -> None:
-		super().__init__(os.path.join(path, 'bank'))
+		super().__init__(os.path.join(path, 'economy'))
 
 	"""
 	---- COMPTES EN BANQUE ----
@@ -32,7 +32,7 @@ class EconomyInterface(Interface):
 
 		id = NSID(id)
 		
-		data = db.get_item(self.path, 'accounts')
+		data = db.get_item(self.path, 'accounts', id)
 
 		if not data:
 			return
@@ -59,12 +59,12 @@ class EconomyInterface(Interface):
 		if res:
 			id = NSID(round(time.time() * 1000))
 		else:
-			id = owner
+			id = NSID(owner)
 
 		data = {
 			'id': id,
 			'tag': tag,
-			'owner_id': owner, 
+			'owner_id': NSID(owner),
 			'frozen': False,
 			'flagged': flagged,
 			'register_date': round(time.time()), 
@@ -79,7 +79,7 @@ class EconomyInterface(Interface):
 		# TRAITEMENT
 
 		account = BankAccount(owner)
-		account._load(data['id'], self.path)
+		account._load(data, self.path)
 
 		return account
 

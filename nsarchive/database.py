@@ -7,7 +7,7 @@ def get_items(dbpath:str, table: str) -> list[dict[str, typing.Any]]:
 	if " " in table:
 		raise SyntaxError("Whitespaces are not allowed in <table> parameter")
 
-	with open(os.path.join(dbpath, table)) as _file:
+	with open(os.path.join(dbpath, f"{table}.json")) as _file:
 		data = json.load(_file)
 		keys = [ k['name'] for k in data['attributes'] ]
 		items = data['items']
@@ -21,7 +21,7 @@ def get_item(dbpath:str, table: str, id: str) -> list[str, typing.Any]:
 	if " " in table:
 		raise SyntaxError("Whitespaces are not allowed in <table> parameter")
 
-	with open(os.path.join(dbpath, table)) as _file:
+	with open(os.path.join(dbpath, f"{table}.json")) as _file:
 		data = json.load(_file)
 
 		keys = [ k['name'] for k in data['attributes'] ]
@@ -40,11 +40,12 @@ def get_item(dbpath:str, table: str, id: str) -> list[str, typing.Any]:
 
 
 def put_item(dbpath: str, table: str, item: dict, overwrite: bool = False):
-	with open(os.path.join(dbpath, table, '.json')) as _file:
+	with open(os.path.join(dbpath, f"{table}.json")) as _file:
 		data = json.load(_file)
 
 		keys = [ k['name'] for k in data['attributes'] ]
-		types = [ k['type'] for k in data['attributes'] ]
+		types = { k['name']: k['type'] for k in data['attributes'] }
+		nullables = { k['name']: k['nullable'] for k in data['attributes'] }
 
 		idx = data['idx']
 		items = data['items']
@@ -62,39 +63,41 @@ def put_item(dbpath: str, table: str, item: dict, overwrite: bool = False):
 	for k, v in item.items():
 		if k not in keys:
 			raise ValueError(f"Unexpected key: '{k}'")
-		
-		if type(v).__name__ != types[k]:
+
+		if v is None:
+			if not nullables[k]:
+				raise ValueError(f"Invalid type for key '{k}': Expected {types[k]}, got NoneType")
+		elif type(v).__name__ != types[k]:
 			raise ValueError(f"Invalid type for key '{k}': Expected {types[k]}, got {type(v).__name__}")
 
 
-	values = [ data[k] for k in keys ]
+	values = [ item[k] for k in keys ]
 
 	if item['id'] in idx:
 		if overwrite:
-			items[idx.index(item['id'])] = values
+			items[idx.index(item['id'])] = dict(zip(keys, values))
 		else:
 			raise ValueError(f"Item with id '{item['id']}' already exists.")
 	else:
-		items.append(values)
-		idx.append[item['id']]
+		items.append(dict(zip(keys, values)))
+		idx.append(item['id'])
 
 
-	with open(os.path.join(dbpath, table, '.json'), 'w' , encoding = 'UTF-8') as _file:
-		data['items'] = items
+	with open(os.path.join(dbpath, f"{table}.json"), 'w' , encoding = 'UTF-8') as _file:
+		data['items'] = [ list(i.values()) for i in items ]
 		data['idx'] = idx
 
-		json.dump(data, indent = 4)
+		json.dump(data, _file, indent = 4)
 
 
 def delete_item(dbpath: str, table: str, id: str) -> tuple[bool, str]:
 	if " " in table:
 		raise SyntaxError("Whitespaces are not allowed in <table> parameter")
 
-	with open(os.path.join(dbpath, table)) as _file:
+	with open(os.path.join(dbpath, f"{table}.json")) as _file:
 		data = json.load(_file)
 
 		keys = [ k['name'] for k in data['attributes'] ]
-		types = [ k['type'] for k in data['attributes'] ]
 
 		idx = data['idx']
 		items = data['items']
@@ -111,11 +114,11 @@ def delete_item(dbpath: str, table: str, id: str) -> tuple[bool, str]:
 		raise KeyError(f"Item with id '{id}' does not exist.")
 
 
-	with open(os.path.join(dbpath, table, '.json'), 'w' , encoding = 'UTF-8') as _file:
-		data['items'] = items
+	with open(os.path.join(dbpath, f"{table}.json"), 'w' , encoding = 'UTF-8') as _file:
+		data['items'] = [ i.values() for i in items ]
 		data['idx'] = idx
 
-		json.dump(data, indent = 4)
+		json.dump(data, _file, indent = 4)
 
 	return True, "Deleted Successfully"
 

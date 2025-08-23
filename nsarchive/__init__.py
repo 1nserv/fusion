@@ -23,8 +23,6 @@ from .models.justice import *
 
 from .models.scale import *
 
-from . import errors
-
 # Import des interfaces
 from .models.base import Interface
 from .interfaces._entities import EntityInterface

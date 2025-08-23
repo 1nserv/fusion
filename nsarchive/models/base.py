@@ -16,6 +16,9 @@ class NSID(str):
     office = "B"
     hexabank = "C"
 
+    def __repr__(self):
+        return f"#{self.upper()}"
+
     def __new__(cls, value):
         if type(value) == int:
             value = hex(value)

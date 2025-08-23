@@ -13,7 +13,7 @@ class JusticeInterface(Interface):
     """
 
     def __init__(self, path: str) -> None:
-        super().__init__(os.path.join(path, 'justice'))
+        super().__init__(os.path.join(path, 'state'))
 
     """
     SIGNALEMENTS
@@ -27,11 +27,11 @@ class JusticeInterface(Interface):
 
         return report
 
-    def submit_report(self, author: NSID, target: NSID, reason: str = None, details: str = None) -> Report:
+    def submit_report(self, target: NSID, author: NSID, reason: str = None, details: str = None) -> Report:
         data = {
             'id': NSID(round(time.time() * 1000)),
-            'author': NSID(author),
             'target': NSID(target),
+            'author': NSID(author),
             'date': round(time.time()),
             'status': 0,
             'reason': reason,
@@ -86,6 +86,9 @@ class JusticeInterface(Interface):
             'is_open': False
         }
 
+        db.put_item(self.path, 'lawsuits', data)
+
+
         lawsuit = Lawsuit(NSID(data['id']))
         lawsuit._load(data, self.path)
 
@@ -128,7 +131,7 @@ class JusticeInterface(Interface):
             'lawsuit': lawsuit.id or None
         }
 
-        db.put_item(self.path, 'lawsuits', data)
+        db.put_item(self.path, 'sanctions', data)
 
         sanction = Sanction(NSID(data['id']))
         sanction._load(data, self.path)

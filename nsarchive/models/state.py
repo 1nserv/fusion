@@ -65,6 +65,9 @@ class Vote:
         self.title: str = ""
         self.author: NSID = NSID(0)
 
+        self.anonymous: bool = True
+        self.type: str = 'normal'
+        
         """
         ## Types de vote
 
@@ -74,9 +77,6 @@ class Vote:
         - Pour/Contre: `2pos`
         - Pour/Contre/Blanc: `3pos`
         """
-
-        self.type: str = 'normal'
-        self.anonymous: bool = True
 
         self.min_choices: int = 1
         self.max_choices: int = 1
@@ -93,9 +93,13 @@ class Vote:
 
         self.id = NSID(_data['id'])
         self.title = _data['title']
-        self.author = _data['author']
+        self.author = NSID(_data['author'])
 
+        self.anonymous = _data['anonymous']
         self.type = _data['type']
+
+        self.max_choices = _data['max_choices']
+        self.min_choices = _data['min_choices']
         self.majority = _data['majority']
 
         self.start_date = _data['start']
@@ -120,19 +124,22 @@ class Vote:
         """
 
         return {
-            'id': str(self.id),
+            'id': self.id,
             'title': self.title,
-            'author': str(self.author),
+            'author': self.author,
+            'anonymous': self.anonymous,
             'type': self.type,
+            'min_choices': self.min_choices,
+            'max_choices': self.max_choices,
             'majority': self.majority,
             'start': self.start_date,
             'end': self.end_date,
             # 'voters': list(map(str, self.voters)) | TODO: issue #4
-            'options': [ opt.__dict__ for opt in self.options ]
+            'options': { id: opt.__dict__ for id, opt in self.options.items() }
         }
 
     def save(self):
-        db.put_item(self._path, 'votes', self._to_dict())
+        db.put_item(self._path, 'votes', self._to_dict(), True)
 
 
     def get(self, id: str) -> VoteOption:
@@ -182,14 +189,14 @@ class Party:
         self.motto: str = None
         self.scale: dict = {}
 
-    def _load(self, _data: dict, path: str ):
+    def _load(self, _data: dict, path: str):
         self._path = path
 
         self.id = _data['id']
 
         self.color = _data['color']
         self.motto = _data['motto']
-        self.scale = _data['politiscales']
+        self.scale = _data['scale']
 
     def _to_dict(self) -> dict:
         return {

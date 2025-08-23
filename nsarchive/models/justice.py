@@ -29,9 +29,9 @@ class Report:
 
     def _to_dict(self) -> dict:
         return {
-            'id': str(self.id),
-            'author': str(self.author),
-            'target': str(self.target),
+            'id': self.id,
+            'target': self.target,
+            'author': self.author,
             'date': self.date,
             'status': self.status,
             'reason': self.reason,
@@ -67,7 +67,7 @@ class Sanction:
         self.date: int = round(time.time())
         self.duration: int = 0
         self.title: str = None
-        self.lawsuit: NSID = NSID('0')
+        self.lawsuit: Lawsuit = None
 
     def _load(self, _data: dict, path: str,) -> None:
         self._path = path
@@ -78,17 +78,22 @@ class Sanction:
         self.date = _data['date']
         self.duration = _data['duration']
         self.title = _data['title']
-        self.lawsuit = NSID(_data['lawsuit'])
+
+        lawsuit = db.get_item(path, 'lawsuits', _data['lawsuit'])
+
+        if lawsuit:
+            self.lawsuit = Lawsuit(NSID(lawsuit))
+            self.lawsuit._load(lawsuit, path)
 
     def _to_dict(self) -> dict:
         return {
-            'id': str(self.id),
-            'target': str(self.target),
+            'id': self.id,
+            'target': self.target,
             'type': self.type,
             'date': self.date,
             'duration': self.duration,
             'title': self.title,
-            'lawsuit': str(self.lawsuit)
+            'lawsuit': self.lawsuit if self.lawsuit else None
         }
 
     def save(self):
@@ -103,7 +108,7 @@ class Lawsuit:
         self.judge: NSID = NSID('0')
         self.title: str = None
         self.date: int = round(time.time())
-        self.report: NSID = NSID('0')
+        self.report: Report = None
         self.is_private: bool = False
         self.is_open: bool = False
 
@@ -116,20 +121,23 @@ class Lawsuit:
         self.title = _data.get('title')
         self.date = _data.get('date', round(time.time()))
 
-        report = _data.get('report')
-        self.report = NSID(report) if report else NSID('0')
+        report = db.get_item(path, 'reports', _data['report'])
+
+        if report: 
+            self.report = Report(NSID(report))
+            self.report._load(report, path)
 
         self.is_private = bool(_data.get('private', 0))
         self.is_open = _data.get('status', 0) == 0
 
     def _to_dict(self) -> dict:
         return {
-            'id': str(self.id),
-            'target': str(self.target),
-            'judge': str(self.judge),
+            'id': self.id,
+            'target': self.target,
+            'judge': self.judge,
             'title': self.title,
             'date': self.date,
-            'report': self.status,
+            'report': self.report.id if self.report else None,
             'is_private': self.is_private,
             'is_open': self.is_open
         }

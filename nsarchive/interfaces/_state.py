@@ -1,3 +1,4 @@
+import os
 import random
 import time
 
@@ -19,7 +20,7 @@ class StateInterface(Interface):
     """
 
     def __init__(self, path: str) -> None:
-        super().__init__(path)
+        super().__init__(os.path.join(path, "state"))
 
 
     """
@@ -54,9 +55,9 @@ class StateInterface(Interface):
         anonymous: bool = True, # Vote anonyme ou non
         options: list[dict | str ] = [], # Options du vote
         start: int = round(time.time()), # Début du vote
-        end: int = None, # Fin du vote
-        min_choices: int = None, # Nombre minimum de choix
-        max_choices: int = None, # Nombre maximum de choix
+        end: int = round(time.time() + 3600), # Fin du vote
+        min_choices: int = 1, # Nombre minimum de choix
+        max_choices: int = 1, # Nombre maximum de choix
         majority: int = 50 # Majorité nécessaire à ce vote
     ) -> Vote:
 
@@ -72,6 +73,7 @@ class StateInterface(Interface):
                     raise KeyError(f"Option with key '{opt['id']}' already exists.")
                 else:
                     _opt_id = NSID(opt['id'])
+                    _opt_title = opt['title']
 
             opts[_opt_id] = {
                 'title': _opt_title,
@@ -110,8 +112,8 @@ class StateInterface(Interface):
             'min_choices': int(min_choices),
             'max_choices': int(max_choices),
             'majority': int(majority),
-            'start_date': int(start),
-            'end_date': int(end),
+            'start': int(start),
+            'end': int(end),
             'options': opts
             # 'voters': []
         }
@@ -169,10 +171,10 @@ class StateInterface(Interface):
         """
 
         data = {
-            'id': id,
+            'id': NSID(id),
             'color': color,
             'motto': motto,
-            'scale': scale.__dict__ if isinstance(scale, Scale) else scale
+            'scale': scale._to_dict() if isinstance(scale, Scale) else scale
         }
 
         db.put_item(self.path, 'parties', data)
@@ -180,7 +182,7 @@ class StateInterface(Interface):
 
         # TRAITEMENT
 
-        party = Party(data['org_id'])
+        party = Party(NSID(data['id']))
         party._load(data, self.path)
 
         return party

@@ -1,9 +1,27 @@
 import time
 import typing
 
+from ..functions.commons import merge_permissions
 from .base import NSID
 
 from .. import database as db
+
+def _load_position(id: str, path: str) -> dict:
+    position = db.get_item(path, 'positions', id)
+
+    if position is None:
+        return
+    
+    if position['category']:
+        parent = _load_position(position['parent'], path)
+        
+        p1 = position['permissions']
+        p2 = parent['permissions']
+
+        position['permissions'] = merge_permissions(p1, p2)
+
+    return position
+
 
 class Permission:
     def __init__(self, initial: str = "----"):
@@ -78,6 +96,7 @@ class Position:
         self.id = id
         self.name: str = "Membre"
         self.is_global_scope: bool = True
+        self.category: str = None
         self.permissions: PositionPermissions = PositionPermissions()
         self.manager_permissions: PositionPermissions = PositionPermissions()
 
@@ -94,6 +113,7 @@ class Position:
         self.id = _data['id']
         self.name = _data['name']
         self.is_global_scope = _data['is_global_scope']
+        self.category = _data['category']
         self.permissions.merge(_data['permissions'])
         self.manager_permissions.merge(_data['manager_permissions'])
 
@@ -102,6 +122,7 @@ class Position:
             'id': self.id,
             'name': self.name,
             'is_global_scope': self.is_global_scope,
+            'category': self.category,
             'permissions': {}, # TODO: issue #2
             'manager_permissions': {} # TODO: issue #2
         }
@@ -195,7 +216,10 @@ class User(Entity):
         self.id = NSID(_data['id'])
         self.name = _data['name']
         self.register_date = _data['register_date']
-        self.position._load(_data['position'], path)
+
+        position = _load_position(_data['position'], path)
+        if position is None: position = Position()._to_dict()
+        self.position._load(position, path)
 
         for  key, value in _data.get('additional', {}).items():
             if isinstance(value, str) and value.startswith('\n'):
@@ -217,11 +241,13 @@ class User(Entity):
             # 'certifications': {}, | TODO: issue #3
             'xp': self.xp,
             'boosts': self.boosts,
-            'additional': self.additional
+            'additional': self.additional,
+            'votes': [ str(vote) for vote in self.votes ]
         }
 
     def save(self):
-        db.put_item(self.path, 'individuals', self._to_dict(), True)
+        db.put_item(self._path, 'individuals', self._to_dict(), True)
+
 
     def get_level(self) -> None:
         i = 0
@@ -266,7 +292,7 @@ class User(Entity):
         for grp in data:
             if grp is None: continue
 
-            group = Organization(grp['id'])
+            group = Organization(NSID(grp['id']))
             group._load(grp, self._path)
 
             groups.append(group)
@@ -293,11 +319,55 @@ class GroupMember:
         self.level: int = 1 # Plus un level est haut, plus il a de pouvoir sur les autres membres
         self.manager: bool = False
 
+    def __repr__(self):
+        return f"level: {self.level}, manager: {self.manager}"
+
+    def __eq__(self, value):
+        if not isinstance(value, GroupMember):
+            return NotImplemented
+
+        return self.id == value.id
+    
+    def __lt__(self, value):
+        if not isinstance(value, GroupMember):
+            return NotImplemented
+
+        if self.level == value.level:
+            return value.manager and not self.manager
+
+        return self.level < value.level
+
+    def __le__(self, value):
+        if not isinstance(value, GroupMember):
+            return NotImplemented
+
+        if self.level == value.level:
+            return value.manager
+
+        return self.level < value.level
+    
+    def __gt__(self, value):
+        if not isinstance(value, GroupMember):
+            return NotImplemented
+
+        if self.level == value.level:
+            return self.manager and not value.manager
+
+        return self.level > value.level
+
+    def __ge__(self, value):
+        if not isinstance(value, GroupMember):
+            return NotImplemented
+
+        if self.level == value.level:
+            return self.manager
+
+        return self.level > value.level
+
     def _load(self, _data: dict, path: str, group: NSID):
         self._path = path
         self._group_id = group
 
-        self.id = _data['id']
         self.level = _data['level']
         self.manager = _data['manager']
 
@@ -309,14 +379,18 @@ class GroupMember:
 
     def save(self):
         data = db.get_item(self._path, 'organizations', self._group_id)
+
         group = data.copy()
+        group['id'] = NSID(group['id'])
+        group['owner_id'] = NSID(group['owner_id'])
+
         group['members'] = {}
 
         for id, m in data['members'].items():
             if m['level'] > 0:
                 group['members'][id] = m
 
-        db.put_item(self.path, 'organizations', group, True)
+        db.put_item(self._path, 'organizations', group, True)
 
     def edit(self, level: int = None, manager: bool = None) -> None:
         if level:
@@ -373,7 +447,10 @@ class Organization(Entity):
         self.id = NSID(_data['id'])
         self.name = _data['name']
         self.register_date = _data['register_date']
-        self.position._load(_data['position'], path)
+
+        position = _load_position(_data['position'], path)
+        if position is None: position = Position('group')._to_dict()
+        self.position._load(position, path)
 
         for  key, value in _data.get('additional', {}).items():
             if isinstance(value, str) and value.startswith('\n'):
@@ -381,22 +458,31 @@ class Organization(Entity):
             else:
                 self.additional[key] = value
 
-        _owner = _data['owner']
 
-        if _owner['_class'] == 'individuals':
-            self.owner = User(_owner['id'])
-        elif _owner['_class'] == 'organizations':
-            self.owner = Organization(_owner['id'])
+        _owner = db.get_item(path, 'individuals', _data['owner_id'])
+        _class = 'user'
+
+        if _owner is None:
+            _owner = db.get_item(path, 'organizations', _data['owner_id'])
+            _class = 'group'
+
+        if _owner:
+            if _class == 'user':
+                self.owner = User(_owner['id'])
+            elif _class == 'group':
+                self.owner = Organization(_owner['id'])
+            else:
+                self.owner = Entity(_owner['id'])
+
+            self.owner._load(_owner, path)
         else:
-            self.owner = Entity(_owner['id'])
-
-        self.owner._load(_owner, path)
+            self.owner = None
 
         for _id, _member in _data['members'].items():
-            member = GroupMember(_id)
+            member = GroupMember(NSID(_id))
             member._load(_member, path, self.id)
 
-            self.members[member.id] = member
+            self.members[NSID(member.id)] = member
 
         self.certifications = _data['certifications']
 
@@ -413,7 +499,8 @@ class Organization(Entity):
         }
 
     def save(self):
-        db.put_item(self.path, 'organizations', self._to_dict(), True)
+        db.put_item(self._path, 'organizations', self._to_dict(), True)
+
 
     def add_certification(self, certification: str, __expires: int = 2419200) -> None:
         self.certifications[certification] = int(round(time.time()) + __expires)
@@ -431,8 +518,8 @@ class Organization(Entity):
             raise TypeError("L'entrée membre doit être de type NSID")
         
         member = GroupMember(member)
-        member._group_url = self._url
-        member._headers = self._headers
+        member._group_id = self.id
+        member._path = self._path
 
         self.members[member.id] = member
 
