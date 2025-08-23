@@ -190,8 +190,8 @@ def setup(path: str, include_logs: bool = False, include_drive: bool = False):
 			Attribute('max_choices', int),
 			Attribute('min_choices', int),
 			Attribute('majority', int),
-			Attribute('start_date', int),
-			Attribute('end_date', int),
+			Attribute('start', int),
+			Attribute('end', int),
 			Attribute('options', dict),
 			Attribute('voters', list)
 		)
