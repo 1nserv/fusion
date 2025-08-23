@@ -219,3 +219,14 @@ def setup(path: str, include_logs: bool = False, include_drive: bool = False):
 			Attribute('scale', dict, nullable = True)
 		)
 	)
+
+	gendb(
+		path = os.path.join(path, 'state'),
+		table = 'candidates',
+		attrs = (
+			Attribute('id', NSID),
+			Attribute('party', NSID, nullable = True),
+			Attribute('current', NSID, nullable = True),
+			Attribute('history', dict, nullable = True)
+		)
+	)

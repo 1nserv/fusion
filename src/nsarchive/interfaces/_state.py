@@ -186,3 +186,69 @@ class StateInterface(Interface):
         party._load(data, self.path)
 
         return party
+
+
+    """
+    CANDIDATS
+    """
+
+    def get_candidate(self, id: NSID) -> Candidate:
+        """
+        Récupère un candidat.
+
+        ## Paramètres
+        id: `NSID`\n
+            ID du candidat.
+
+        ## Renvoie
+        - `.Candidate`
+        """
+
+        id = NSID(id)
+        data = db.get_item(self.path, 'candidates', str(id))
+
+        if data is None:
+            return
+
+        candidate = Candidate(id)
+        candidate._load(data, self.path)
+
+        return candidate
+
+
+    def add_candidate(self, id: NSID, party: Party = None) -> Candidate:
+        """
+        Enregistre un nouveau candidat.
+
+        ## Paramètres
+        - id: `NSID`\n
+            ID de l'entreprise à laquelle correspond le candidat
+        - party: `.Party` (optionnel)\n
+            Parti du candidat
+        """
+
+        data = {
+            'id': NSID(id),
+            'party': party.id if party else None,
+            'current': None,
+            'history': {}
+        }
+
+        db.put_item(self.path, 'candidates', data)
+
+        candidate = Candidate(NSID(data['id']))
+        candidate._load(data, self.path)
+
+        return candidate
+
+    def delete_candidate(self, id: NSID):
+        """
+        Supprime un candidat.
+
+        ## Paramètres
+        - id: `NSID`\n
+            ID du candidat.
+        """
+
+        id = NSID(id)
+        db.delete_item(self.path, 'candidates', str(id))

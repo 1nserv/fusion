@@ -4,6 +4,7 @@ import json
 import time
 
 from .base import NSID
+from .scale import Scale
 from .. import database as db
 
 
@@ -180,30 +181,61 @@ class Party:
         self._path: str = ''
 
         self.id = id
-
         self.color: int = 0x000000
         self.motto: str = None
-        self.scale: dict = {}
+        self.scale: Scale = Scale()
 
     def _load(self, _data: dict, path: str):
         self._path = path
 
-        self.id = _data['id']
+        self.id = NSID(_data['id'])
 
         self.color = _data['color']
         self.motto = _data['motto']
-        self.scale = _data['scale']
+        self.scale._load(_data['scale'])
 
     def _to_dict(self) -> dict:
         return {
-            'id': str(self.id),
+            'id': self.id,
             'color': self.color,
             'motto': self.motto,
-            'scale': self.scale,
+            'scale': self.scale._to_dict(),
         }
 
     def save(self):
         db.put_item(self._path, 'parties', self._to_dict())
 
 
-# class Candidate | TODO: issue #6
+class Candidate:
+    def __init__(self, id: NSID):
+        self._path: str = ''
+
+        self.id: NSID = id
+        self.party: Party = None
+        self.current: NSID = None
+        self.history: dict = {}
+
+    def _load(self, _data: dict, path: str):
+        self._path = path
+
+        self.id = NSID(_data['id'])
+
+        _party = db.get_item(path, 'parties', _data['party'])
+
+        if _party:
+            self.party = Party(NSID(_data['party']))
+            self.party._load(_party, path)
+
+        self.current = NSID(_data['current'])
+        self.history = _data['history']
+
+    def _to_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'party': self.party.id if self.party else None,
+            'current': self.current,
+            'history': self.history,
+        }
+
+    def save(self):
+        db.put_item(self._path, 'candidates', self._to_dict())
