@@ -51,9 +51,9 @@ def get_phase(ts: int = round(time.time())) -> str:
 
 
 def next_election(type: str = 'partial') -> int:
-    if get_cycle() == 1:
+    if get_cycle() == 0:
         return PATIENTAGE_DATE
-    elif get_cycle() == 2:
+    elif get_cycle() == 1:
         return OPEN_DATE
     else:
         if type == 'partial':
