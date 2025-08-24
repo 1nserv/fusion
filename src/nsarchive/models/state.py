@@ -203,7 +203,7 @@ class Party:
         }
 
     def save(self):
-        db.put_item(self._path, 'parties', self._to_dict())
+        db.put_item(self._path, 'parties', self._to_dict(), True)
 
 
 class Candidate:
@@ -238,4 +238,4 @@ class Candidate:
         }
 
     def save(self):
-        db.put_item(self._path, 'candidates', self._to_dict())
+        db.put_item(self._path, 'candidates', self._to_dict(), True)
