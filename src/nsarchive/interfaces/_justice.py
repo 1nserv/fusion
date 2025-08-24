@@ -120,7 +120,7 @@ class JusticeInterface(Interface):
 
         return sanction
 
-    def add_sanction(self, target: NSID, _type: str, duration: int = None, title: str = None, lawsuit: Lawsuit = None) -> Sanction:
+    def add_sanction(self, target: NSID, _type: str, duration: int = 0, title: str = None, lawsuit: Lawsuit = None) -> Sanction:
         data = {
             'id': lawsuit.id if lawsuit else NSID(round(time.time() * 1000)),
             'target': NSID(target),
