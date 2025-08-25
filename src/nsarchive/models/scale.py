@@ -42,10 +42,19 @@ class Scale:
             'REV': 18 * self.revolution
         }.values())
 
-        return round(x, 2)
+        return round(x / 40, 2)
 
 
 REFERENCE = {
+    "Anarchie": Scale({
+        "DEM": 40,
+        "SRV": 40,
+        "LIB": 40,
+        "INT": 40,
+        "MDE": 40,
+        "PAZ": 40,
+        "REV": 40
+    }),
     "Révolution": Scale({
         "DEM": 40,
         "SRV": 25,
@@ -88,13 +97,13 @@ REFERENCE = {
 def get_positions(score: Scale, ref: dict[str, Scale] = REFERENCE) -> list[str]:
     dist = sorted(
         ref.items(),
-        key = lambda r : abs(r[1].calc_score() - score.calc_scale())
+        key = lambda r : abs(r[1].calc_score() - score.calc_score())
     )
 
     items = []
 
     for item in dist:
-        if abs(item[1].calc_scale() - score.calc_scale()) < 20:
+        if abs(item[1].calc_score() - score.calc_score()) < 15:
             items.append(item[0])
 
     return items

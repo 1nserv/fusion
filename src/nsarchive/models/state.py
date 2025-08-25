@@ -157,13 +157,13 @@ class Vote:
         if _save:
             self.save()
 
-    def add_votes(self, *ids: str): # author: NSID):
+    def add_votes(self, author: NSID, *ids: str):
         """
         Ajoute un vote aux loptions spécifiées
         """
 
         for id in ids:
-            self.add_vote(id, _save = False)
+            self.add_vote(id, author, _save = False)
 
         self.save()
 
