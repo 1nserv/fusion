@@ -155,7 +155,7 @@ class StateInterface(Interface):
 
         return party
 
-    def register_party(self, id: NSID, color: int, motto: str = None, scale: dict | Scale = {}) -> Party:
+    def register_party(self, id: NSID, color: int, motto: str = None) -> Party:
         """
         Enregistre un nouveau parti pour que ses députés puissent s'y présenter.
 
@@ -166,15 +166,12 @@ class StateInterface(Interface):
             Couleur du parti
         - motto: `str`\n
             Devise du parti
-        - scale: `.Scale`\n
-            Résultats du parti au test Politiscales
         """
 
         data = {
             'id': NSID(id),
             'color': color,
-            'motto': motto,
-            'scale': scale._to_dict() if isinstance(scale, Scale) else scale
+            'motto': motto
         }
 
         db.put_item(self.path, 'parties', data)
@@ -216,7 +213,7 @@ class StateInterface(Interface):
         return candidate
 
 
-    def add_candidate(self, id: NSID, party: Party = None) -> Candidate:
+    def add_candidate(self, id: NSID, party: Party = None, scale: dict | Scale = {}) -> Candidate:
         """
         Enregistre un nouveau candidat.
 
@@ -225,10 +222,13 @@ class StateInterface(Interface):
             ID de l'entreprise à laquelle correspond le candidat
         - party: `.Party` (optionnel)\n
             Parti du candidat
+        - scale: `.Scale`\n
+            Résultats du candidat au test Politiscales
         """
 
         data = {
             'id': NSID(id),
+            'scale': scale._to_dict() if isinstance(scale, Scale) else scale,
             'party': party.id if party else None,
             'current': None,
             'history': {}

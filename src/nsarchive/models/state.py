@@ -183,7 +183,6 @@ class Party:
         self.id = id
         self.color: int = 0x000000
         self.motto: str = None
-        self.scale: Scale = Scale()
 
     def _load(self, _data: dict, path: str):
         self._path = path
@@ -192,14 +191,12 @@ class Party:
 
         self.color = _data['color']
         self.motto = _data['motto']
-        self.scale._load(_data['scale'])
 
     def _to_dict(self) -> dict:
         return {
             'id': self.id,
             'color': self.color,
-            'motto': self.motto,
-            'scale': self.scale._to_dict(),
+            'motto': self.motto
         }
 
     def save(self):
@@ -211,6 +208,7 @@ class Candidate:
         self._path: str = ''
 
         self.id: NSID = id
+        self.scale: Scale = Scale()
         self.party: Party = None
         self.current: NSID = None
         self.history: dict = {}
@@ -219,6 +217,7 @@ class Candidate:
         self._path = path
 
         self.id = NSID(_data['id'])
+        self.scale._load(_data['scale'])
 
         _party = db.get_item(path, 'parties', _data['party'])
 
@@ -232,9 +231,10 @@ class Candidate:
     def _to_dict(self) -> dict:
         return {
             'id': self.id,
+            'scale': self.scale._to_dict(),
             'party': self.party.id if self.party else None,
             'current': self.current,
-            'history': self.history,
+            'history': self.history
         }
 
     def save(self):

@@ -215,8 +215,7 @@ def setup(path: str, include_logs: bool = False, include_drive: bool = False):
 		attrs = (
 			Attribute('id', NSID),
 			Attribute('color', int, nullable = True),
-			Attribute('motto', str, nullable = True),
-			Attribute('scale', dict, nullable = True)
+			Attribute('motto', str, nullable = True)
 		)
 	)
 
@@ -225,6 +224,7 @@ def setup(path: str, include_logs: bool = False, include_drive: bool = False):
 		table = 'candidates',
 		attrs = (
 			Attribute('id', NSID),
+			Attribute('scale', dict, nullable = True),
 			Attribute('party', NSID, nullable = True),
 			Attribute('current', NSID, nullable = True),
 			Attribute('history', dict, nullable = True)
