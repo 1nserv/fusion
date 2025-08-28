@@ -469,10 +469,6 @@ class Organization(Entity):
     - Tous les attributs de la classe `.Entity`
     - owner: `.Entity`\n
         Utilisateur ou entreprise propriétaire de l'entité collective
-    - avatar_url: `str`\n
-        Url du logo de l'entité collective
-    - certifications: `dict[str, Any]`\n
-        Liste des certifications et de leur date d'ajout
     - members: `list[.GroupMember]`\n
         Liste des membres de l'entreprise
     """
@@ -483,7 +479,6 @@ class Organization(Entity):
         self.owner: Entity = User(NSID(0x0))
         self.avatar_path: str = ''
 
-        self.certifications: dict[NSID, int] = {}
         self.members: dict[NSID, GroupMember] = {}
 
     def _load(self, _data: dict, path: str):

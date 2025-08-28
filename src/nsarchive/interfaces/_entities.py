@@ -108,11 +108,10 @@ class EntityInterface(Interface):
                 'name': name,
                 'position': position if position else 'member',
                 'register_date': round(time.time()),
-                # 'certifications': {},
+                'certifications': {},
                 'xp': 0,
                 'boosts': {},
-                'additional': {},
-                'votes': []
+                'additional': {}
             }
         else:
             raise ValueError(f"Class '{_class.__name__}' not recognized.")
