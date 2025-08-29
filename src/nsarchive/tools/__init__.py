@@ -81,6 +81,7 @@ def setup(path: str, include_logs: bool = False, include_drive: bool = False):
 		attrs = (
 			Attribute('id', str),
 			Attribute('name', str),
+			Attribute('role', int, nullable = True),
 			Attribute('root', str, nullable = True),
 			Attribute('level', int, nullable = True),
 			Attribute('permissions', dict)

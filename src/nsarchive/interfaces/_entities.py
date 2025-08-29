@@ -212,8 +212,8 @@ class EntityInterface(Interface):
     def get_position_tree(self, id: str, tree: tuple = ()) -> tuple:
         position = self.get_position(id)
 
-        if position.parent:
-            return self.get_position_tree(position.parent, tree + position.id,)
+        if position.root:
+            return self.get_position_tree(position.root, tree + position.id,)
         else:
             return tree + position.id,
 
@@ -222,10 +222,17 @@ class EntityInterface(Interface):
 
         permissions.merge(position.permissions)
 
-        if position.parent:
-            self.permission_herit(position.parent, permissions)
+        if position.root:
+            self.permission_herit(position.root, permissions)
 
-    def create_position(self, id: str, title: str, permissions: PositionPermissions = PositionPermissions(), parent: Position = None) -> Position:
+    def create_position(
+        self,
+        id: str,
+        title: str,
+        permissions: PositionPermissions = PositionPermissions(),
+        root: Position = None,
+        level: int = None
+    ) -> Position:
         """
         Crée une position légale
 
@@ -233,15 +240,24 @@ class EntityInterface(Interface):
         - id: `str`\n
             ID de la position
         - title: `str`\n
-            Titre de la posiion
+            Titre de la position
+        - root: `str`\n
+            Catégorie de la position (officier, citoyen)
+        - level: `int`\n
+            Grade de la position dans cette catégorie
         - permissions: `.PositionPermissions` (optionnel)\n
             Permissions accordées à la position
         """
 
+        if root and not level:
+            raise ValueError("If 'root' is specified, 'level' must also be specified.")
+
         data = {
             'id': id,
             'name': title,
-            'parent': parent.id if parent else None,
+            'role': None,
+            'root': root.id if root else None,
+            'level': level,
             'permissions': permissions.__dict__
         }
 
@@ -275,6 +291,8 @@ class EntityInterface(Interface):
         for _data in _res:
             pos = Position()
             pos._load(_data, self.path)
+
+            self.permission_herit(pos.id, pos.permissions)
 
             res.append(pos)
 

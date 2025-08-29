@@ -91,6 +91,7 @@ class Position:
 
         self.id = id
         self.name: str = "Membre"
+        self.role: int = None
         self.root: str = None
         self.level: int = None
         self.permissions: PositionPermissions = PositionPermissions()
@@ -176,6 +177,7 @@ class Position:
 
         self.id = _data['id']
         self.name = _data['name']
+        self.role = _data['role']
         self.root = _data['root']
         self.level = _data['level']
         self.permissions.merge(_data['permissions'])
@@ -184,6 +186,7 @@ class Position:
         return {
             'id': self.id,
             'name': self.name,
+            'role': self.role,
             'root': self.root,
             'level': self.level,
             'permissions': self.permissions.__dict__
