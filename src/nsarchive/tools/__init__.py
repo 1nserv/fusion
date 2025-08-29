@@ -103,24 +103,16 @@ def setup(path: str, include_logs: bool = False, include_drive: bool = False):
 	db.put_item(os.path.join(path, 'entities'), table = 'positions', item = {
 		'id': 'member',
 		'name': 'Membre',
+		'role': None,
 		'root': None,
 		'level': None,
 		'permissions': {}
 	})
 
 	db.put_item(os.path.join(path, 'entities'), table = 'positions', item = {
-		'id': 'citoyen',
-		'name': 'Citoyen',
-		'root': 'member',
-		'level': 1,
-		'permissions': {
-			'create_groups': True
-		}
-	})
-
-	db.put_item(os.path.join(path, 'entities'), table = 'positions', item = {
 		'id': 'group',
 		'name': 'Groupe',
+		'role': None,
 		'root': None,
 		'level': None,
 		'permissions': {}

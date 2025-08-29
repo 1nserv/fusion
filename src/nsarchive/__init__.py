@@ -1,7 +1,7 @@
 """
 nsarchive - API-wrapper pour récupérer des données liées à Nation.
 
-Version: 4.2.0
+Version: 4.4.0
 License: GPL-3.0
 Auteur : happex <110610727+okayhappex@users.noreply.github.com>
 
