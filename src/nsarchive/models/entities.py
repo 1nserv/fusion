@@ -30,7 +30,7 @@ class PositionPermissions:
     Permissions d'une position à l'échelle du serveur. Certaines sont attribuées selon l'appartenance à divers groupes ayant une position précise
     """
 
-    def __init__(self) -> None:
+    def __init__(self, _data: list | dict[str, bool] = None) -> None:
         self.create_certifications: bool = False # Créer des certifications
         self.create_entities: bool = False # Créer des entités
         self.create_groups: bool = False # Créer des groupes
@@ -57,6 +57,14 @@ class PositionPermissions:
         self.use_aliases: bool = False # Faire une requête au nom d'une autre entité
         self.vote: bool = False # Voter
         self.vote_laws: bool = False # Voter les lois
+
+        if _data:
+            if isinstance(_data, list):
+                self.merge(dict(zip(_data, [ True ] * len(_data))))
+            elif isinstance(_data, dict):
+                self.merge(_data)
+            else:
+                raise TypeError("Invalid data format for PositionPermissions.")
 
     def __repr__(self):
         return self.__dict__.__repr__()
