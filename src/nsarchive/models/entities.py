@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import time
 import typing
 
@@ -29,9 +31,6 @@ class PositionPermissions:
     """
 
     def __init__(self) -> None:
-        self.admin: bool = False
-        self.citizen: bool = False
-
         self.create_certifications: bool = False # Créer des certifications
         self.create_entities: bool = False # Créer des entités
         self.create_groups: bool = False # Créer des groupes
@@ -79,8 +78,10 @@ class Position:
         Identifiant de la position
     - name: `str`\n
         Titre de la position
-    - parent: `str`\n
-        Parent de la position, dont elle héritera des permissions
+    - root: `str`\n
+        Catégorie de la position (officier, citoyen)
+    - level: `int`\n
+        Grade de la position dans cette catégorie
     - permissions: `.PositionPermissions`\n
         Permissions accordées à l'utilisateur
     """
@@ -90,29 +91,101 @@ class Position:
 
         self.id = id
         self.name: str = "Membre"
-        self.parent: str = None
+        self.root: str = None
+        self.level: int = None
         self.permissions: PositionPermissions = PositionPermissions()
 
 
     def __repr__(self):
         return self.id
 
-    def __eq__(self, value):
-        return 0        
+    def __eq__(self, value: Position):
+        if not isinstance(value, Position):
+            return NotImplemented
+
+        return self.id == value.id
+
+    def _lt_(self, value: Position):
+        if not isinstance(value, Position):
+            return NotImplemented
+
+        a, b = self._compare(value)
+
+        return a < b
+
+    def _le_(self, value: Position):
+        if not isinstance(value, Position):
+            return NotImplemented
+
+        a, b = self._compare(value)
+
+        return a <= b
+
+    def _gt_(self, value: Position):
+        if not isinstance(value, Position):
+            return NotImplemented
+
+        a, b = self._compare(value)
+
+        return a > b
+
+    def _ge_(self, value: Position):
+        if not isinstance(value, Position):
+            return NotImplemented
+
+        a, b = self._compare(value)
+
+        return a >= b
+
+    def _compare(self, value: Position) -> tuple[int, int]:
+        if not isinstance(value, Position):
+            return NotImplemented
+
+        if self.root == value.root:
+            return self.level, value.level
+        else:
+            _ROOTS = [
+                None,
+                'member',
+                'citizen',
+                'officer',
+                'admin'
+            ]
+
+            _ROOTS_GROUPS = [
+                None,
+                'group',
+                'agency',
+                'department'
+            ]
+
+            if self.root in _ROOTS:
+                if value.root in _ROOTS:
+                    return _ROOTS.index(self.root), _ROOTS.index(value.root)
+                else:
+                    raise ValueError("Cannot compare user and group")
+            elif self.root in _ROOTS_GROUPS:
+                if value.root in _ROOTS_GROUPS:
+                    return _ROOTS_GROUPS.index(self.root), _ROOTS_GROUPS.index(value.root)
+                else:
+                    raise ValueError("Cannot compare user and group")
+
 
     def _load(self, _data: dict, path: str) -> None:
         self._path = path
 
         self.id = _data['id']
         self.name = _data['name']
-        self.parent = _data['parent']
+        self.root = _data['root']
+        self.level = _data['level']
         self.permissions.merge(_data['permissions'])
 
     def _to_dict(self) -> dict:
         return {
             'id': self.id,
             'name': self.name,
-            'parent': self.parent,
+            'root': self.root,
+            'level': self.level,
             'permissions': self.permissions.__dict__
         }
 
@@ -184,6 +257,37 @@ class Entity:
         self.position: Position = Position()
         self.certifications: dict[NSID, int] = {}
         self.additional: dict = {}
+
+    def __eq__(self, value: Entity):
+        if not isinstance(value, Entity):
+            return NotImplemented
+
+        return self.id == value.id
+
+    def __lt__(self, value: Entity):
+        if not isinstance(value, Entity):
+            return NotImplemented
+
+        return self.position < value.position
+
+    def __le__(self, value: Entity):
+        if not isinstance(value, Entity):
+            return NotImplemented
+
+        return self.position <= value.position
+
+    def __gt__(self, value: Entity):
+        if not isinstance(value, Entity):
+            return NotImplemented
+
+        return self.position > value.position
+
+    def __ge__(self, value: Entity):
+        if not isinstance(value, Entity):
+            return NotImplemented
+
+        return self.position >= value.position
+
 
     def _load(self, _data: dict, path: str):
         self._path = path

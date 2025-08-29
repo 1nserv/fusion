@@ -81,7 +81,8 @@ def setup(path: str, include_logs: bool = False, include_drive: bool = False):
 		attrs = (
 			Attribute('id', str),
 			Attribute('name', str),
-			Attribute('parent', str, nullable = True),
+			Attribute('root', str, nullable = True),
+			Attribute('level', int, nullable = True),
 			Attribute('permissions', dict)
 		)
 	)
@@ -101,16 +102,17 @@ def setup(path: str, include_logs: bool = False, include_drive: bool = False):
 	db.put_item(os.path.join(path, 'entities'), table = 'positions', item = {
 		'id': 'member',
 		'name': 'Membre',
-		'parent': None,
+		'root': None,
+		'level': None,
 		'permissions': {}
 	})
 
 	db.put_item(os.path.join(path, 'entities'), table = 'positions', item = {
 		'id': 'citoyen',
 		'name': 'Citoyen',
-		'parent': 'member',
+		'root': 'member',
+		'level': 1,
 		'permissions': {
-			'citizen': True,
 			'create_groups': True
 		}
 	})
@@ -118,7 +120,8 @@ def setup(path: str, include_logs: bool = False, include_drive: bool = False):
 	db.put_item(os.path.join(path, 'entities'), table = 'positions', item = {
 		'id': 'group',
 		'name': 'Groupe',
-		'parent': None,
+		'root': None,
+		'level': None,
 		'permissions': {}
 	})
 
