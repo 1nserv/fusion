@@ -14,11 +14,11 @@ def _load_position(id: str, path: str) -> dict:
     if position is None:
         return
 
-    if position['parent']:
-        parent = _load_position(position['parent'], path)
+    if position['root']:
+        root = _load_position(position['root'], path)
 
         p1 = position['permissions']
-        p2 = parent['permissions']
+        p2 = root['permissions']
 
         position['permissions'] = merge_permissions(p1, p2)
 
